@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101b2b"><meta name="description" content="Mobile MW4 DMZ companion for maps, loot, missions, crafting and screenshot-assisted planning.">
+<link rel="manifest" href="manifest.json">
+<title>DMZ Command Center</title>
+<style>
+:root{--bg:#0b1220;--panel:#121e30;--panel2:#1a2a40;--line:#293b52;--text:#eef4fb;--muted:#9eb0c5;--accent:#55d6a3;--warn:#ffca70;--blue:#80b8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif;padding-bottom:84px}
+header{position:sticky;top:0;z-index:5;background:#101b2bf2;backdrop-filter:blur(12px);padding:15px 16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:10px}.brand h1{font-size:18px;letter-spacing:1.3px;margin:0}.sub{color:var(--muted);font-size:11px;letter-spacing:1px}
+.pill{border:1px solid #326b59;color:var(--accent);border-radius:20px;padding:5px 9px;font-size:10px;font-weight:700}
+main{max-width:780px;margin:auto;padding:14px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px;margin:12px 0}
+h2{font-size:19px;margin:0 0 12px}h3{font-size:14px;margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted);line-height:1.45}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{background:var(--panel2);border-radius:12px;padding:12px}.stat b{display:block;font-size:21px}.stat span{font-size:11px;color:var(--muted)}
+button,.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 12px;border-radius:10px;font:inherit;cursor:pointer}
+button.primary{background:var(--accent);color:#062018;border-color:var(--accent);font-weight:800}button.ghost{background:transparent}button:active{transform:scale(.98)}
+input,select,textarea{width:100%;background:#0b1625;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit;margin:5px 0 10px}
+textarea{min-height:90px;resize:vertical}.tabs{display:flex;overflow:auto;gap:7px;padding:12px 14px;background:var(--bg);position:sticky;top:64px;z-index:4;border-bottom:1px solid var(--line)}
+.tabs button{white-space:nowrap;font-size:12px;padding:9px 12px}.tabs button.active{background:var(--accent);color:#062018;border-color:var(--accent);font-weight:800}
+.view{display:none}.view.active{display:block}.row{display:flex;gap:8px;align-items:center;justify-content:space-between}.item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}.item input{width:auto;margin:3px 0}.tag{font-size:10px;border:1px solid var(--line);border-radius:20px;padding:3px 7px;color:var(--muted)}
+.maplinks a,.source a{color:var(--blue);text-decoration:none}.mapgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.loc{background:var(--panel2);padding:11px;border:1px solid var(--line);border-radius:10px;text-align:left}.loc small{display:block;color:var(--muted);margin-top:5px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#101b2bf2;border-top:1px solid var(--line);padding:10px max(14px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:6}
+footer span{font-size:11px;color:var(--muted)}.notice{border-left:3px solid var(--warn);padding:9px 11px;background:#332b1d;border-radius:7px;color:#ffe2ad;font-size:12px;line-height:1.45}
+.preview{width:100%;max-height:260px;object-fit:contain;border-radius:10px;background:#080d16;margin:8px 0}
+@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}.mapgrid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div><h1>DMZ COMMAND CENTER</h1><div class="sub">MW4 · FIELD INTELLIGENCE</div></div><span class="pill">LOCAL BUILD 0.1</span></div></header>
+<nav class="tabs" id="tabs">
+<button class="active" data-view="home">Command</button><button data-view="map">Map</button><button data-view="loot">Loot</button><button data-view="craft">Crafting</button><button data-view="missions">Missions</button><button data-view="intel">Screenshot AI</button><button data-view="data">Data & Share</button>
+</nav>
+<main>
+<section class="view active" id="home">
+<div class="panel"><div class="row"><h2>Deployment command</h2><span class="tag">PRE-DEPLOY</span></div>
+<label class="small">Deployment zone</label><select id="zone"><option>Hajin</option><option>X01 Black Site</option></select>
+<label class="small">Primary objective</label><select id="goal"><option>Crafting materials</option><option>Mission progression</option><option>FOB upgrades</option><option>Boss hunting</option><option>Keys and locked rooms</option><option>Survive and extract</option></select>
+<label class="small">Squad / operator notes</label><textarea id="brief" placeholder="Loadout, mission, squad needs, what you are carrying..."></textarea>
+<button class="primary" onclick="makeBrief()">Build tactical briefing</button><button onclick="copyBrief()">Copy briefing</button>
+<div id="briefout" class="small" style="margin-top:10px"></div></div>
+<div class="grid"><div class="stat"><b id="lootCount">0</b><span>Tracked loot items</span></div><div class="stat"><b id="missionCount">0</b><span>Completed objectives</span></div><div class="stat"><b>13</b><span>Seeded Hajin / X01 areas</span></div><div class="stat"><b>Offline</b><span>Local-first storage</span></div></div>
+<div class="panel"><h3>Quick actions</h3><div class="grid"><button onclick="show('map')">Open tactical map</button><button onclick="show('loot')">Track loot</button><button onclick="show('craft')">Plan crafting</button><button onclick="show('intel')">Analyze screenshot</button></div></div>
+<div class="notice">Prototype data is not a fully verified spawn database. Confirm item locations, recipes, boss details and extraction conditions against current in-game evidence before relying on them.</div>
+</section>
+<section class="view" id="map">
+<div class="panel"><h2>Hajin tactical map index</h2><p class="small">Tap an area to add it to your route notes. This build uses an editable POI index and links to community map references; it does not yet contain a calibrated in-app map image or verified pin coordinates.</p>
+<input id="mapSearch" placeholder="Search locations..." oninput="renderLocations()"><div class="mapgrid" id="locations"></div>
+<div class="maplinks small" style="margin-top:14px">External interactive maps: <a href="https://dmzmap.com/" target="_blank" rel="noopener">DMZ Map</a> · <a href="https://dmzhub.gg/" target="_blank" rel="noopener">DMZHub</a> · <a href="https://dmztracker.gg/" target="_blank" rel="noopener">DMZTracker</a></div></div>
+<div class="panel"><h3>Route scratchpad</h3><textarea id="route" placeholder="Add stops in order, threat notes, key-room targets, exfil plan..."></textarea><button onclick="saveText('route')">Save route notes</button></div>
+</section>
+<section class="view" id="loot">
+<div class="panel"><h2>Loot tracker</h2><input id="lootSearch" placeholder="Search items..." oninput="renderItems()"><div id="items"></div>
+<h3 style="margin-top:14px">Add your own item</h3><input id="newItem" placeholder="Item name"><select id="newCategory"><option>Crafting</option><option>Mission</option><option>Key</option><option>Upgrade</option><option>Valuable</option><option>Equipment</option></select><button class="primary" onclick="addItem()">Add item</button></div>
+</section>
+<section class="view" id="craft">
+<div class="panel"><h2>3D Printer / crafting planner</h2><p class="small">Recipe records are intentionally empty until verified. Add recipes from your own discoveries or import an updated data file.</p>
+<input id="recipeName" placeholder="Recipe / crafted item"><textarea id="recipeParts" placeholder="Ingredients, one per line. Example: 2x item A"></textarea><select id="recipeStatus"><option>Player confirmed</option><option>Community reported</option><option>Unverified</option></select><button class="primary" onclick="addRecipe()">Save recipe</button><div id="recipes" style="margin-top:12px"></div></div>
+</section>
+<section class="view" id="missions">
+<div class="panel"><h2>Mission & upgrade tracker</h2><p class="small">Create and track mission objectives, FOB upgrades, boss targets and key-room goals. Entries stay on this device until exported or synced by you.</p>
+<select id="taskType"><option>Mission</option><option>FOB Upgrade</option><option>Boss</option><option>Key / locked room</option><option>Other</option></select><input id="taskName" placeholder="Objective name"><textarea id="taskDetails" placeholder="Requirements, steps, reward, location, evidence/source..."></textarea><button class="primary" onclick="addTask()">Add objective</button><div id="tasks" style="margin-top:12px"></div></div>
+</section>
+<section class="view" id="intel">
+<div class="panel"><h2>Screenshot-assisted intelligence</h2><p class="small">Choose a screenshot from your phone. This page previews it and prepares a structured prompt you can send to GPT, Claude or Gemini. The HTML app itself does not call AI APIs or read the game screen automatically.</p>
+<input type="file" id="shot" accept="image/*"><img id="shotPreview" class="preview" hidden>
+<label class="small">What do you want identified?</label><select id="shotTask"><option>Identify loot and keep / drop recommendations</option><option>Read mission objectives and track progress</option><option>Analyze map / location and suggest route</option><option>Identify boss, threat or equipment</option><option>Read crafting recipe or upgrade requirements</option><option>General screenshot analysis</option></select>
+<textarea id="shotContext" placeholder="Add context: current mission, inventory space, target recipe, squad objective..."></textarea>
+<button class="primary" onclick="buildPrompt()">Generate AI analysis prompt</button><textarea id="aiPrompt" placeholder="Your analysis prompt appears here..." readonly></textarea><button onclick="copyPrompt()">Copy prompt</button>
+<div class="small">Next step: attach the same screenshot in your chosen AI chat and paste the generated prompt. For an integrated one-tap AI workflow, add API keys through a secure backend—not inside this public HTML file.</div></div>
+</section>
+<section class="view" id="data">
+<div class="panel"><h2>Save, share and edit</h2><p class="small">Your progress is saved in this browser on this device. Export regularly to back it up or move it to another phone.</p>
+<button class="primary" onclick="exportData()">Export complete database (JSON)</button><label class="small" style="display:block;margin-top:14px">Import a previously exported JSON file</label><input type="file" id="importFile" accept=".json,application/json"><button onclick="importData()">Import database</button>
+<button style="margin-top:10px" onclick="resetData()">Reset local data</button></div>
+<div class="panel"><h3>Project data and source links</h3><div id="sources" class="source small"></div></div>
+<div class="panel"><h3>How to share this app</h3><ol class="small"><li>Share the ZIP project with a friend, or host the folder using GitHub Pages / Netlify to get a shareable web link.</li><li>For Android installation, open the hosted HTTPS link in Chrome and choose Install app / Add to Home screen.</li><li>Export your JSON data to transfer your trackers. Local browser data does not automatically sync between phones.</li></ol></div>
+</section>
+</main>
+<footer><span>DMZ COMMAND CENTER · LOCAL-FIRST · NOT AFFILIATED WITH ACTIVISION</span></footer>
+<script>
+window.SEED_DATA={"game":"Modern Warfare 4 DMZ","version":"Prototype 0.1","lastVerified":"2026-11-14","sources":[{"name":"Activision MW4 Season 1 announcement","url":"https://www.callofduty.com/blog/2026/10/call-of-duty-modern-warfare-4-warzone-season-1-announcement","type":"Official"},{"name":"Activision MW4 Season 1 patch notes","url":"https://www.callofduty.com/patchnotes/2026/11/call-of-duty-modern-warfare-4-season-1-patch-notes","type":"Official"},{"name":"DMZTracker","url":"https://dmztracker.gg/","type":"Community database"},{"name":"DMZHub","url":"https://dmzhub.gg/","type":"Community database"},{"name":"MW4 Hajin interactive map","url":"https://dmzmap.com/","type":"Community map"}],"locations":[{"name":"14th Political Prison","region":"Hajin","threat":"High"},{"name":"Chang-san Air Base","region":"Hajin","threat":"Critical"},{"name":"Deadtown","region":"Hajin","threat":"Medium"},{"name":"Imjin Farmland","region":"Hajin","threat":"Low"},{"name":"Cheongun Village","region":"Hajin","threat":"High"},{"name":"Haneul Nuclear Reactor","region":"Hajin","threat":"High"},{"name":"NuriGO Mall","region":"Hajin","threat":"Medium"},{"name":"Cheonwang Peak Array","region":"Hajin","threat":"Medium"},{"name":"The Grid","region":"Hajin","threat":"Critical"},{"name":"Songdo Wharf","region":"Hajin","threat":"Medium"},{"name":"Wolves Stadium","region":"Hajin","threat":"Medium"},{"name":"Hajin River Heights","region":"Hajin","threat":"Medium"},{"name":"X01 Black Site","region":"X01","threat":"Extreme"}],"items":[{"name":"Military Composites","category":"Crafting","status":"Reported","notes":"Verify exact spawn locations and recipe uses before relying on this entry."},{"name":"Reactive Metals","category":"Crafting","status":"Reported","notes":"Verify exact spawn locations and recipe uses before relying on this entry."},{"name":"Biomaterials","category":"Crafting","status":"Unverified","notes":"Add confirmed sources and recipes."},{"name":"Electronic Sensors","category":"Crafting","status":"Unverified","notes":"Add confirmed sources and recipes."},{"name":"Control Unit","category":"Crafting","status":"Unverified","notes":"Add confirmed sources and recipes."},{"name":"Printed Circuit Board","category":"Crafting","status":"Unverified","notes":"Add confirmed sources and recipes."},{"name":"Detonators","category":"Crafting","status":"Unverified","notes":"Add confirmed sources and recipes."},{"name":"High-Tenacity Fibers","category":"Crafting","status":"Reported","notes":"Verify exact spawn locations and recipe uses before relying on this entry."}],"recipes":[],"missions":[],"bosses":[],"keys":[],"upgrades":[]};
+const STORE='mw4dmz-command-v01';
+let db, lastBrief='';
+async function loadSeed(){const r=await fetch('data.json');return await r.json()}
+function defaults(){return {items:[],recipes:[],tasks:[],route:'',brief:'',locations:[]}}
+async function init(){let seed;try{seed=await loadSeed()}catch(e){seed=window.SEED_DATA||{items:[],recipes:[],tasks:[],locations:[],sources:[]}}
+try{db=JSON.parse(localStorage.getItem(STORE))||defaults()}catch(e){db=defaults()}
+db.items ||= []; db.recipes ||= []; db.tasks ||= []; db.locations ||= seed.locations||[]; db.sources=seed.sources||[];
+if(!db.seeded){db.items=seed.items||[];db.seeded=true}
+document.getElementById('brief').value=db.brief||'';document.getElementById('route').value=db.route||'';
+renderAll()}
+function persist(){localStorage.setItem(STORE,JSON.stringify(db));renderStats()}
+function show(id){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.view===id));window.scrollTo({top:0,behavior:'smooth'})}
+document.getElementById('tabs').addEventListener('click',e=>{let b=e.target.closest('button[data-view]');if(b)show(b.dataset.view)});
+function renderStats(){document.getElementById('lootCount').textContent=db.items.filter(x=>x.checked).length;document.getElementById('missionCount').textContent=db.tasks.filter(x=>x.done).length}
+function renderLocations(){let q=(document.getElementById('mapSearch').value||'').toLowerCase();document.getElementById('locations').innerHTML=db.locations.filter(x=>x.name.toLowerCase().includes(q)).map((x,i)=>`<button class="loc" onclick="addRoute('${esc(x.name)}')">${esc(x.name)}<small>${esc(x.region)} · Threat: ${esc(x.threat)}</small></button>`).join('')}
+function addRoute(name){let el=document.getElementById('route');el.value+=(el.value?' → ':'')+name;db.route=el.value;persist()}
+function renderItems(){let q=(document.getElementById('lootSearch').value||'').toLowerCase();document.getElementById('items').innerHTML=db.items.filter(x=>x.name.toLowerCase().includes(q)).map((x,i)=>`<div class="item"><input type="checkbox" ${x.checked?'checked':''} onchange="toggleItem(${i},this.checked)"><div style="flex:1"><b>${esc(x.name)}</b><div class="small">${esc(x.category||'Item')} · ${esc(x.status||'User added')}</div>${x.notes?`<div class="small">${esc(x.notes)}</div>`:''}</div><button onclick="removeItem(${i})">×</button></div>`).join('')||'<p class="small">No matching items.</p>'}
+function toggleItem(i,v){db.items[i].checked=v;persist();renderItems()}
+function removeItem(i){db.items.splice(i,1);persist();renderItems()}
+function addItem(){let n=document.getElementById('newItem').value.trim();if(!n)return;db.items.push({name:n,category:document.getElementById('newCategory').value,status:'User added',checked:false});document.getElementById('newItem').value='';persist();renderItems()}
+function renderRecipes(){document.getElementById('recipes').innerHTML=db.recipes.map((x,i)=>`<div class="item"><div style="flex:1"><b>${esc(x.name)}</b><div class="small">${esc(x.status)}<br>${esc(x.parts.join(' · '))}</div></div><button onclick="db.recipes.splice(${i},1);persist();renderRecipes()">×</button></div>`).join('')||'<p class="small">No recipes saved yet.</p>'}
+function addRecipe(){let name=document.getElementById('recipeName').value.trim();if(!name)return;db.recipes.push({name,parts:document.getElementById('recipeParts').value.split('\n').map(x=>x.trim()).filter(Boolean),status:document.getElementById('recipeStatus').value});document.getElementById('recipeName').value='';document.getElementById('recipeParts').value='';persist();renderRecipes()}
+function renderTasks(){document.getElementById('tasks').innerHTML=db.tasks.map((x,i)=>`<div class="item"><input type="checkbox" ${x.done?'checked':''} onchange="db.tasks[${i}].done=this.checked;persist();renderTasks()"><div style="flex:1"><b>${esc(x.name)}</b><div class="small">${esc(x.type)} · ${esc(x.details)}</div></div><button onclick="db.tasks.splice(${i},1);persist();renderTasks()">×</button></div>`).join('')||'<p class="small">No objectives added yet.</p>'}
+function addTask(){let name=document.getElementById('taskName').value.trim();if(!name)return;db.tasks.push({type:document.getElementById('taskType').value,name,details:document.getElementById('taskDetails').value,done:false});document.getElementById('taskName').value='';document.getElementById('taskDetails').value='';persist();renderTasks()}
+function makeBrief(){db.brief=document.getElementById('brief').value;persist();lastBrief=`MW4 DMZ tactical briefing. Zone: ${document.getElementById('zone').value}. Objective: ${document.getElementById('goal').value}. Operator notes: ${db.brief}. Use only verified facts, identify uncertainty, prioritize survival and extraction. Provide a route, loot priorities, threats, contingency and extraction plan.`;document.getElementById('briefout').textContent=lastBrief}
+function copyBrief(){if(!lastBrief)makeBrief();navigator.clipboard?.writeText(lastBrief)}
+function saveText(id){db[id]=document.getElementById(id).value;persist()}
+document.getElementById('shot').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let u=URL.createObjectURL(f),im=document.getElementById('shotPreview');im.src=u;im.hidden=false});
+function buildPrompt(){let task=document.getElementById('shotTask').value,ctx=document.getElementById('shotContext').value;let p=`You are my Modern Warfare 4 DMZ tactical intelligence analyst. Analyze the attached game screenshot for: ${task}. Context: ${ctx||'No extra context.'}\n\nExtract only information visibly supported by the screenshot. Separate observed facts from inference and uncertainty. Cross-check item names and requirements against current MW4 DMZ sources where possible. Do not invent coordinates, loot spawns, recipes, mission progress or enemy positions. Recommend next actions, inventory keep/drop priorities, route and extraction considerations. Ask for clarification if the screenshot is unreadable.`;document.getElementById('aiPrompt').value=p}
+function copyPrompt(){navigator.clipboard?.writeText(document.getElementById('aiPrompt').value)}
+function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mw4-dmz-command-center-data.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(){let f=document.getElementById('importFile').files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!Array.isArray(d.items)||!Array.isArray(d.tasks)||!Array.isArray(d.recipes))throw Error();db={...defaults(),...d};persist();renderAll();alert('Data imported.')}catch(e){alert('That file does not look like a valid command-center export.')}};r.readAsText(f)}
+function resetData(){if(confirm('Delete this device’s saved command-center data? Export a backup first.')){localStorage.removeItem(STORE);location.reload()}}
+function renderSources(){document.getElementById('sources').innerHTML=db.sources.map(x=>`<p><a href="${x.url}" target="_blank" rel="noopener">${esc(x.name)}</a> · ${esc(x.type)}</p>`).join('')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderAll(){renderStats();renderLocations();renderItems();renderRecipes();renderTasks();renderSources()}
+init();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
